@@ -18,12 +18,13 @@
   <!-- The display name of your add-in. Used on the store and various places of the Office UI such as the add-ins dialog. -->
   <DisplayName DefaultValue="Rise-OutlookAddins-Linkedin" />
   <Description DefaultValue="Recherche le profil LinkedIn de l'expéditeur ou du contact."/>
+  <IconUrl DefaultValue="https://rise-4.github.io/Rise-OutlookAddins-Linkedin/assets/icon-64.png" />
+  <HighResolutionIconUrl DefaultValue="https://rise-4.github.io/Rise-OutlookAddins-Linkedin/assets/icon-128.png"/>
   <SupportUrl DefaultValue="https://rise-4.github.io/Rise-OutlookAddins-Linkedin/index.html" />
-
   <!-- Domains that will be allowed when navigating. For example, if you use ShowTaskpane and then have an href link, navigation will only be allowed if the domain is on this list. -->
   <AppDomains>
     <AppDomain>https://rise-4.github.io</AppDomain>
-    <AppDomain>https://linkedin.com</AppDomain>
+    <AppDomain>https://www.linkedin.com</AppDomain>
   </AppDomains>
   <!--End Basic Settings. -->
 
@@ -35,10 +36,6 @@
       <Set Name="Mailbox" MinVersion="1.1" />
     </Sets>
   </Requirements>
-  
-  <!-- Icon for your add-in. Used on installation screens and the add-ins dialog. -->
-  <IconUrl DefaultValue="https://rise-4.github.io/Rise-OutlookAddins-Linkedin/assets/icon-64.png" />
-  <HighResolutionIconUrl DefaultValue="https://rise-4.github.io/Rise-OutlookAddins-Linkedin/assets/icon-128.png"/>
   
   <FormSettings>
     <Form xsi:type="ItemRead">
