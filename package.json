@@ -1,0 +1,16 @@
+{
+  "name": "rise-outlook-addins-linkedin",
+  "description": "",
+  "author": "",
+  "version": "0.1.0",
+  "scripts": {
+    "validate": "office-toolbox validate -m manifest.xml",
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "office-toolbox": "^0.1.1",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {}
+}
