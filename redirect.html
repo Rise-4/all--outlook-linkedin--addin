@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <title>Redirection...</title>
+    <script>
+        // Récupérer l'URL de redirection depuis les paramètres
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUrl = urlParams.get('url');
+        
+        if (targetUrl) {
+            // Rediriger vers l'URL cible
+            window.location.href = targetUrl;
+        } else {
+            document.body.innerHTML = '<p>Erreur: URL de redirection manquante.</p>';
+        }
+    </script>
+</head>
+<body>
+    <p>Redirection en cours vers LinkedIn...</p>
+</body>
+</html>
+

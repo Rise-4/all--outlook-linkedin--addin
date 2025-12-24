@@ -2,7 +2,6 @@
 
 Office.onReady((info) => {
   if (info.host === Office.HostType.Outlook) {
-    // La fonction sera appelée directement par le manifest
     console.log("Office.js chargé, add-in prêt");
   }
 });
@@ -52,9 +51,7 @@ function searchLinkedIn(event) {
     
     if (fullName) {
       // Nettoyer le nom (enlever les adresses email si c'est juste un email)
-      // Si c'est un email, on peut essayer d'extraire le nom de l'email
       if (fullName.includes('@') && !fullName.includes(' ')) {
-        // C'est probablement juste un email, utiliser la partie avant @
         fullName = fullName.split('@')[0].replace(/[._]/g, ' ');
       }
       
@@ -63,140 +60,86 @@ function searchLinkedIn(event) {
       // Construire l'URL de recherche LinkedIn
       const linkedInUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodedName}`;
       
-      // Ouvrir LinkedIn dans le navigateur par défaut
-      // Utiliser une technique qui fonctionne dans les add-ins Outlook
-      try {
-        // Méthode 1: Essayer d'ouvrir directement avec un élément <a> cliqué programmatiquement
-        // Cette méthode fonctionne mieux que window.open dans les contextes d'add-ins
-        const link = document.createElement('a');
-        link.href = linkedInUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        
-        // Utiliser à la fois click() et dispatchEvent pour maximiser la compatibilité
-        if (link.click) {
-          link.click();
-        } else {
-          const clickEvent = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true
-          });
-          link.dispatchEvent(clickEvent);
-        }
-        
-        // Retirer l'élément après un court délai
-        setTimeout(() => {
-          if (link.parentNode) {
-            document.body.removeChild(link);
-          }
-        }, 100);
-        
-        console.log("Tentative d'ouverture de LinkedIn:", linkedInUrl);
-      } catch (e) {
-        console.error("Erreur avec la méthode directe:", e);
-        // Fallback: Utiliser une page de redirection dans une boîte de dialogue
-        try {
-          const redirectUrl = `https://rise-4.github.io/all--outlook-linkedin--addin/redirect.html?url=${encodeURIComponent(linkedInUrl)}`;
-          
-          Office.context.ui.displayDialogAsync(
-            redirectUrl,
-            { 
-              height: 60, 
-              width: 50,
-              displayInIframe: false
-            },
-            (asyncResult) => {
-              if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-                console.error("Erreur lors de l'ouverture de la boîte de dialogue:", asyncResult.error);
-                showErrorMessage("Impossible d'ouvrir LinkedIn. Veuillez copier cette URL: " + linkedInUrl);
-              } else {
-                // Écouter les messages de la boîte de dialogue pour la fermer
-                const dialog = asyncResult.value;
-                dialog.addEventHandler(Office.EventType.DialogMessageReceived, (arg) => {
-                  if (arg.message === 'close') {
-                    dialog.close();
-                  }
-                });
-              }
-            }
-          );
-        } catch (e2) {
-          console.error("Erreur lors de l'ouverture de LinkedIn:", e2);
-          showErrorMessage("Erreur lors de l'ouverture de LinkedIn. URL: " + linkedInUrl);
-        }
-      }
+      // Ouvrir LinkedIn dans le navigateur par défaut du système
+      // Office.context.ui.openBrowserWindow() (Mailbox 1.6+) ouvre dans le navigateur par défaut
+      openInDefaultBrowser(linkedInUrl, event);
     } else {
-      showErrorMessage("Impossible de récupérer le nom. Veuillez sélectionner un mail ou un contact avec un expéditeur/organisateur.");
+      showNotification("Impossible de récupérer le nom. Veuillez sélectionner un mail ou un contact.");
+      event.completed();
     }
   } catch (error) {
     console.error("Erreur lors de la recherche LinkedIn:", error);
-    showErrorMessage("Une erreur est survenue: " + error.message);
+    showNotification("Une erreur est survenue: " + error.message);
+    event.completed();
   }
-  
-  // Indiquer que la commande est terminée
-  event.completed();
 }
 
 /**
- * Affiche un message d'erreur dans une boîte de dialogue
+ * Ouvre une URL dans le navigateur par défaut du système
+ * Utilise openBrowserWindow (Mailbox 1.6+) avec fallback
  */
-function showErrorMessage(message) {
-  Office.context.ui.displayDialogAsync(
-    'about:blank',
-    { height: 30, width: 40 },
-    (asyncResult) => {
-      if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
-        const dialog = asyncResult.value;
-        dialog.addEventHandler(Office.EventType.DialogMessageReceived, () => {
-          dialog.close();
-        });
-        const htmlContent = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              body { 
-                font-family: 'Segoe UI', Arial, sans-serif; 
-                padding: 20px; 
-                text-align: center; 
-                background-color: #f5f5f5;
-              }
-              .message {
-                background-color: white;
-                padding: 20px;
-                border-radius: 5px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                margin-bottom: 15px;
-              }
-              button {
-                background-color: #0078d4;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 3px;
-                cursor: pointer;
-                font-size: 14px;
-              }
-              button:hover {
-                background-color: #106ebe;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="message">
-              <p>${message}</p>
-            </div>
-            <button onclick="window.close()">Fermer</button>
-          </body>
-          </html>
-        `;
-        dialog.messageChild(htmlContent);
+function openInDefaultBrowser(url, event) {
+  // Vérifier si openBrowserWindow est disponible (Mailbox 1.6+)
+  if (Office.context.ui.openBrowserWindow) {
+    Office.context.ui.openBrowserWindow(url);
+    console.log("LinkedIn ouvert dans le navigateur par défaut:", url);
+    event.completed();
+  } else {
+    // Fallback pour les anciennes versions: utiliser displayDialogAsync avec redirection
+    console.warn("openBrowserWindow non disponible, utilisation du fallback");
+    
+    // Créer une page de redirection dynamique
+    const redirectHtml = `https://rise-4.github.io/all--outlook-linkedin--addin/redirect.html?url=${encodeURIComponent(url)}`;
+    
+    Office.context.ui.displayDialogAsync(
+      redirectHtml,
+      { height: 10, width: 10, displayInIframe: false },
+      (asyncResult) => {
+        if (asyncResult.status === Office.AsyncResultStatus.Succeeded) {
+          const dialog = asyncResult.value;
+          // Fermer le dialogue après un court délai
+          setTimeout(() => {
+            try {
+              dialog.close();
+            } catch (e) {
+              // Dialogue peut déjà être fermé
+            }
+          }, 2000);
+        } else {
+          console.error("Erreur displayDialogAsync:", asyncResult.error);
+          showNotification("Impossible d'ouvrir LinkedIn. URL: " + url);
+        }
+        event.completed();
       }
-    }
-  );
+    );
+  }
+}
+
+/**
+ * Affiche une notification à l'utilisateur
+ * Utilise l'API de notification d'Outlook si disponible
+ */
+function showNotification(message) {
+  // Utiliser l'API de notification si disponible (plus propre que displayDialogAsync)
+  if (Office.context.mailbox.item && Office.context.mailbox.item.notificationMessages) {
+    Office.context.mailbox.item.notificationMessages.replaceAsync(
+      "linkedin-notification",
+      {
+        type: Office.MailboxEnums.ItemNotificationMessageType.InformationalMessage,
+        message: message,
+        icon: "Icon.16x16",
+        persistent: false
+      },
+      (result) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          console.error("Erreur notification:", result.error);
+          // Fallback: alert simple
+          console.log("Message pour l'utilisateur:", message);
+        }
+      }
+    );
+  } else {
+    console.log("Message pour l'utilisateur:", message);
+  }
 }
 
